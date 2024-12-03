@@ -26,6 +26,7 @@ module RegEx {
         var groupid := 1;
         var groups: seq<nat> := [];
         var parens: seq<Paren> :=[];
+        var escape := false;
         var inCharacterClass := false;
         for i := 0 to |re| 
             invariant |groups| == |parens|
@@ -33,6 +34,16 @@ module RegEx {
             // print "char -> ";
             // print re[i];
             // print "\n";
+            if escape {
+                escape := false;
+                if natom > 1 {
+                    natom := natom -1;
+                    buf := buf + [Concat];
+                }
+                buf := buf + [Char(re[i])];
+                natom := natom + 1;
+                continue;
+            }
             match re[i] {
                 case '.' => {
                     if natom > 1 {
@@ -119,6 +130,9 @@ module RegEx {
                     }
                     buf := buf + [Optional];
                 }
+                case '\\' => {
+                    escape := true;
+                }
                 case _ => {
                     if natom > 1 {
                         natom := natom -1;
@@ -143,6 +157,7 @@ module RegEx {
         }
         return Success(buf);
     }
+
     datatype MatchKind = Split | Match | Wild | MatchChar(c: char) {
         function GetChar(): char
             requires MatchChar?
@@ -634,20 +649,20 @@ module RegEx {
         expect m5 == true, "test 5 failed";
     }
 
-    method Main() 
-        decreases *
-    {
-        // var test := re2post("a(a+be*)(c|(d)|f)g");
-        // var test := re2post("ac+de?(fg)*");
-        // print test;
-        // print "\n";
-        // match test {
-        //     case Success(value) => print seq(|value|, i requires 0 <= i < |value| => RegToChar(value[i]));
-        //     case Failure(err) => print err;
-        // }
-        test_re2post();
-        test_ReMatch();
-    }
+    // method Main() 
+    //     decreases *
+    // {
+    //     // var test := re2post("a(a+be*)(c|(d)|f)g");
+    //     // var test := re2post("ac+de?(fg)*");
+    //     // print test;
+    //     // print "\n";
+    //     // match test {
+    //     //     case Success(value) => print seq(|value|, i requires 0 <= i < |value| => RegToChar(value[i]));
+    //     //     case Failure(err) => print err;
+    //     // }
+    //     test_re2post();
+    //     test_ReMatch();
+    // }
     
     export provides ReMatch
 }

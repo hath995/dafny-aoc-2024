@@ -50,7 +50,6 @@ module Problem1 {
     method problem1_2(input: string) returns (x: int)
     {
         var left, right := parseInput(input);
-        left := MergeSortBy(lte, left);
         var rightms := multiset(right);
         return  FoldLeft((sum, val) => sum + val, 0, Map((val:int) => val * rightms[val], left));
     }
