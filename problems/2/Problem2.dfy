@@ -5,9 +5,12 @@ module Problem2 {
     import opened ParseInt
     import opened Std.Collections.Seq
 
-    method parseInput(input: string) returns (ss: seq<seq<int>>) {
+    method parseInput(input: string) returns (ss: seq<seq<int>>)
+        ensures Distinct(ss)
+    {
         var data := splitOnBreak(input);
         ss := Map(s => Map(Integer, split(s, " ")), Filter((s: string) => s != "", data));
+        expect Distinct(ss), "Data must be distinct";
     }
 
     predicate Increasing(s: seq<int>) {
@@ -43,22 +46,41 @@ module Problem2 {
         exists i :: 0 <= i < |ss|  && SafeReport(ss[0..i] + ss[i + 1..])
     }
 
-    method problem2_1(input: string) returns (x: int) {
+    predicate Distinct(sss: seq<seq<int>>) {
+        forall i, j :: 0 <= i < j < |sss| ==> sss[i] != sss[j]
+    }
+
+    method problem2_1(input: string) returns (x: int)
+        ensures exists ds: set<seq<int>> :: (forall d :: d in ds ==> SafeReport(d)) && |ds| == x
+    {
         var data := parseInput(input);
         x := 0;
-        for i := 0 to |data| {
+        ghost var ds: set<seq<int>> := {};
+        for i := 0 to |data| 
+            invariant ds == set y | y in data[0..i] && SafeReport(y)
+            invariant x == |ds|
+        {
             if SafeReport(data[i]) {
+                assert |ds| == x;
                 x := x + 1;
+                ds := ds + {data[i]};
             }
         }
     }
 
-    method problem2_2(input: string) returns (x: int) {
+    method problem2_2(input: string) returns (x: int) 
+        ensures exists ds: set<seq<int>> :: (forall d :: d in ds ==> SafeReport(d) || SafeWithOneRemoved(d)) && |ds| == x
+    {
         var data := parseInput(input);
+        ghost var ds: set<seq<int>> := {};
         x := 0;
-        for i := 0 to |data| {
+        for i := 0 to |data|
+            invariant ds == set y | y in data[0..i] && (SafeReport(y) || SafeWithOneRemoved(y))
+            invariant x == |ds|
+        {
             if SafeReport(data[i]) || SafeWithOneRemoved(data[i]) {
                 x := x + 1;
+                ds := ds + {data[i]};
             }
         }
     }
