@@ -1,10 +1,7 @@
 include "../../parser/split.dfy"
-include "../../parser/regex.dfy"
 include "./matrix.dfy"
 module Problem4 {
     import opened Split
-    import opened Std.Collections.Seq
-    import opened RegEx
     import opened Matrix
 
     method ParseInput(input: string) returns (ss: Matrix<char>) 
