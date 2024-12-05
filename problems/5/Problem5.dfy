@@ -102,7 +102,8 @@ module Problem5 {
             decreases *
         {
             print sorted, "\n";
-            for i := 0 to |sorted| 
+            var i := |sorted| - 1;
+            while i >= 0
                 invariant multiset(sorted) == multiset(update)
             {
                 if i < |sorted| && !RulesSatisfied(orderingRules, i, sorted) {
@@ -130,6 +131,7 @@ module Problem5 {
                     }
                     continue cont;
                 }
+                i := i - 1;
             }
         }
     }
