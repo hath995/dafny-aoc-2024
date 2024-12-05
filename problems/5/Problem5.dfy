@@ -101,11 +101,13 @@ module Problem5 {
             invariant multiset(sorted) == multiset(update)
             decreases *
         {
+            print sorted, "\n";
             for i := 0 to |sorted| 
                 invariant multiset(sorted) == multiset(update)
             {
                 if i < |sorted| && !RulesSatisfied(orderingRules, i, sorted) {
-                    var badIndices := set j | 0 <= j < i <= |sorted| && sorted[j] in orderingRules[sorted[i]];
+                    assert 0 <= i < |sorted|;
+                    var badIndices := set j | 0 <= j < i < |sorted| && sorted[j] in orderingRules[sorted[i]];
                     assert |badIndices| < i by {
                         if |badIndices| >= i {
                             assume {:axiom} exists j :: j in badIndices && j >= i;
@@ -115,12 +117,15 @@ module Problem5 {
                     var badIndicesSeq := SetToSequence(badIndices);
                     assert |badIndicesSeq| < |sorted|;
                     for j := 0 to |badIndicesSeq| 
+                        invariant i < |sorted|
                         invariant |badIndicesSeq| < i
                         invariant |badIndicesSeq| < |sorted|
                         invariant forall k :: k in badIndicesSeq ==> 0 <= k < i
                         invariant multiset(sorted) == multiset(update)
                     {
                         var index := badIndicesSeq[j];
+                        assert 0 <= index < i < |sorted|;
+                        assert sorted == sorted[0..index]  + [sorted[index]]+ sorted[index+1..index+2] + sorted[index+2..];
                         sorted := sorted[0..index] + sorted[index+1..index+2] + [sorted[index]] + sorted[index+2..];
                     }
                     continue cont;
