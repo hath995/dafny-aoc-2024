@@ -90,6 +90,31 @@ module Problem5 {
         [x] + SetToSequence(s - {x})
     }
 
+    lemma SetSizeLimit(s: set<int>, n: int, p: int -> bool)
+        requires n >= 0
+        requires s == set i | 0 <= i < n && p(i)
+        ensures |s| <= n
+    {
+        if n == 0 {
+            assert s == {};
+            assert |s| == 0;
+            assert |s| <= n;
+        } else if n == 1 {
+            if p(0) {
+                assert s == {0};
+                assert |s| == 1;
+                assert |s| <= n;
+            } else {
+                assert s == {};
+                assert |s| == 0;
+                assert |s| <= n;
+            }
+
+        }else{
+            SetSizeLimit(s - {n-1}, n-1, p);
+        }
+    }
+
 
     method SortByRules(orderingRules: map<int, seq<int>>, update: seq<int>) returns (sorted: seq<int>) 
         ensures multiset(sorted) == multiset(update)
@@ -109,17 +134,13 @@ module Problem5 {
                 if i < |sorted| && !RulesSatisfied(orderingRules, i, sorted) {
                     assert 0 <= i < |sorted|;
                     var badIndices := set j | 0 <= j < i < |sorted| && sorted[j] in orderingRules[sorted[i]];
-                    assert |badIndices| < i by {
-                        if |badIndices| >= i {
-                            assume {:axiom} exists j :: j in badIndices && j >= i;
-                            assert false;
-                        }
-                    }
+                    SetSizeLimit(badIndices, i, j =>  0 <= j < |sorted| && sorted[j] in orderingRules[sorted[i]]);
+                    assert |badIndices| <= i;
                     var badIndicesSeq := SetToSequence(badIndices);
                     assert |badIndicesSeq| < |sorted|;
                     for j := 0 to |badIndicesSeq| 
                         invariant i < |sorted|
-                        invariant |badIndicesSeq| < i
+                        invariant |badIndicesSeq| <= i
                         invariant |badIndicesSeq| < |sorted|
                         invariant forall k :: k in badIndicesSeq ==> 0 <= k < i
                         invariant multiset(sorted) == multiset(update)
