@@ -28,6 +28,25 @@ module Matrix {
             // i := i + 1;
         }
     }
+    method matrixMul(left: array2<nat>, right: array2<nat>) returns (result: array2<nat>)
+        requires left.Length1 == right.Length0
+        ensures result.Length0 == left.Length0 && result.Length1 == right.Length1
+        ensures fresh(result)
+    {
+        result := new nat[left.Length0, right.Length1];
+        for i := 0 to left.Length0
+        {
+            print "i=", i, "\n";
+            for j := 0 to right.Length1
+            {
+                result[i,j] := 0;
+                for k := 0 to left.Length1
+                {
+                    result[i,j] := result[i,j] + left[i,k] * right[k,j];
+                }
+            }
+        }
+    }
 
     // twostate function ftranspose(matrix: array2<real>): array2<real> 
     //     reads matrix
@@ -187,6 +206,66 @@ module Matrix {
     {
 
     }
+
+    /*
+	FloydWarshall() {
+		if(this.rows != this.columns) {
+			throw new Error("Matrix incorrectly sized; Must be NxN matrix");
+		}
+		var D = this.copy(); 
+		for(var k=0; k < this.rows; k++) {
+			for(var i =0; i < this.rows; i++) {
+				for(var j = 0; j < this.rows; j++) {
+					if(D.values[i][k]+D.values[k][j] < D.values[i][j]) {
+						D.values[i][j] =D.values[i][k]+D.values[k][j]; 
+					}
+				}
+			}
+			// $("body").append("D(k)=<br>"+D);
+		}
+		return D;
+	}
+    */
+    datatype NumberOrInfinity = Number(n: int) | Infinity
+    function lt(a: NumberOrInfinity, b: NumberOrInfinity): bool
+    {
+        if !a.Infinity? && !b.Infinity? then a.n < b.n else if !a.Infinity? && b.Infinity? then true else false
+    }
+
+    lemma TestLt()
+    {
+        assert lt(Number(1), Number(2));
+        assert !lt(Number(2), Number(1));
+        assert lt(Number(1), Infinity);
+        assert !lt(Infinity, Number(1));
+        assert !lt(Infinity, Infinity);
+    }
+
+
+    function addNumbers(a: NumberOrInfinity, b: NumberOrInfinity): NumberOrInfinity
+    {
+        if !a.Infinity? && !b.Infinity? then Number(a.n + b.n) else Infinity
+    }
+    method FloydWarshall(graph: array2<NumberOrInfinity>)
+        requires graph.Length0 == graph.Length1
+        modifies graph
+    {
+        var D := graph;
+        for k := 0 to D.Length0
+        {
+            print "FW k=", k," / ", D.Length0, "\n";
+            for i := 0 to D.Length0
+            {
+                for j := 0 to D.Length0
+                {
+                    if lt(addNumbers(D[i,k], D[k,j]), D[i,j]) {
+                        D[i,j] := addNumbers(D[i,k], D[k,j]);
+                    }
+                }
+            }
+        }
+    }
+
 
     method Test() {
         var foo : Matrix := Matrice([[1.0,2.0],[3.0,4.0]],2,2);
