@@ -82,31 +82,6 @@ module Problem12 {
         (i % dim.0, i / dim.0)
     }
 
-    lemma ThereIsAMinimum(s: set<nat>)
-        requires s != {}
-        ensures exists x :: x in s && forall y :: y in s ==> x <= y
-    {
-        assert s != {};
-        var x :| x in s;
-        if s == {x} {
-        } else {
-            var s' := s - {x};
-            assert s == s' + {x};
-            ThereIsAMinimum(s');
-        }
-    }
-
-    function SetToSequence(s: set<nat>): seq<nat>
-        ensures var q := SetToSequence(s); forall i :: 0 <= i < |q| ==> q[i] in s
-        ensures |SetToSequence(s)| == |s|
-        ensures forall p :: p in s ==> p in SetToSequence(s)
-    {
-    if s == {} then [] else
-        ThereIsAMinimum(s);
-        var x :| x in s && forall y :: y in s ==> x <= y;
-        [x] + SetToSequence(s - {x})
-    }
-
     method problem12_1(input: string) returns (x: int) 
         decreases *
     {
