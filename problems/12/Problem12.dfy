@@ -6,6 +6,7 @@ module Problem12 {
     import opened ParseInt
     import opened Std.Collections.Seq
     import opened QuickUnion
+    import opened Std.Relations
     method parseInput(input: string) returns (data: seq<string>, dim: (nat, nat))
         ensures |data| > 0
         ensures dim.1 > 0
@@ -157,7 +158,155 @@ module Problem12 {
 
     }
 
-    method problem12_2(input: string) returns (x: int) {
-        return 4;
+    function tupleSort(t1: (nat, nat), t2: (nat, nat)): bool
+    {
+        t1.1 < t2.1 || (t1.1 == t2.1 && t1.0 <= t2.0)
+    }
+
+    lemma tupleSortReflexive()
+        ensures Reflexive(tupleSort)
+    {
+    }
+
+    lemma tupleSortTotalOrder()
+        ensures TotalOrdering(tupleSort)
+    {
+    }
+
+    method problem12_2(input: string) returns (x: int)
+        decreases *
+    {
+        var data, dim := parseInput(input);
+        var union := new QuickUnion(dim.0 * dim.1);
+        x := 0;
+        assert union.n == dim.0 * dim.1;
+        assert union.parent.Length == dim.0 * dim.1;
+        assert fresh(union);
+        assert union.Valid();
+        for i := 0 to dim.1 
+            invariant union.n == dim.0 * dim.1
+            invariant union.Valid()
+            modifies  union.size, union.parent
+        {
+            for j := 0 to dim.0
+                invariant union.n == dim.0 * dim.1
+                invariant union.Valid()
+                modifies  union.size, union.parent
+            {
+                if i+1 < dim.1 && data[i][j] == data[i+1][j] {
+                    pairToIndexLess((j,i), dim);
+                    pairToIndexLess((j,i+1), dim);
+                    assert union.parent.Length == dim.0 * dim.1;
+                    union.union(pairToIndex((j,i), dim), pairToIndex((j,i+1), dim));
+                }
+                if j+1 < dim.0 && data[i][j] == data[i][j+1] {
+                    pairToIndexLess((j,i), dim);
+                    pairToIndexLess((j+1,i), dim);
+                    assert union.parent.Length == dim.0 * dim.1;
+                    union.union(pairToIndex((j,i), dim), pairToIndex((j+1,i), dim));
+                }
+            }
+        }
+        var groupings: map<nat, seq<(nat, nat)>> := map[];
+        for i := 0 to dim.0 * dim.1 
+            invariant union.n == dim.0 * dim.1
+            invariant union.Valid()
+            invariant forall key :: key in groupings.Keys ==> forall x :: x in groupings[key] ==> 0 <= x.0 < dim.0 && 0 <= x.1 < dim.1
+            modifies union.parent
+        {
+            var root := union.findRoot(i);
+            if root !in groupings {
+                groupings := groupings[root := [indexToPair(i, dim)]];
+            } else {
+                groupings := groupings[root := groupings[root] + [indexToPair(i, dim)]];
+            }
+        }
+        var groups := groupings.Keys;
+        var what := groupings.Values;
+        while groups != {} {
+            var group :| group in groups;
+            tupleSortTotalOrder();
+            var groupMembers := MergeSortBy(tupleSort, groupings[group]);
+            // var groupMembers := groupings[group];
+            groups := groups - {group};
+            var vWalls: set<(int, (int, int))> := {};
+            var hWalls: set<(int, (int, int))> := {};
+            for i := 0 to |groupMembers| {
+                var p: (nat, nat) := groupMembers[i];
+                if (0 <= (p.0-1 as int) && data[p.1][p.0-1] != data[p.1][p.0]) || p.0 == 0 {
+                    var vWallsC := vWalls;
+                    var found := false;
+                    while vWallsC != {} {
+                        var wall :| wall in vWallsC;
+                        if wall.0 == p.0 && wall.1.1 == p.1-1 && data[p.1-1][p.0] == data[p.1][p.0] {
+                            found := true;
+                            vWalls := vWalls - {wall}+ {(wall.0, (wall.1.0, p.1))};
+                            break;
+                        }
+                        vWallsC := vWallsC - {wall};
+                    }
+                    if !found {
+                        vWalls := vWalls + {(p.0, (p.1-1, p.1))};
+                    }
+                }
+                if (p.0+1 < dim.0 && data[p.1][p.0+1] != data[p.1][p.0]) || p.0 == dim.0-1 {
+                    var vWallsC := vWalls;
+                    var found := false;
+                    while vWallsC != {} {
+                        var wall :| wall in vWallsC;
+                        if wall.0 == p.0+1 && wall.1.1 == p.1-1 && data[p.1-1][p.0] == data[p.1][p.0] {
+                            found := true;
+                            vWalls := vWalls - {wall}+ {(wall.0, (wall.1.0, p.1))};
+                            break;
+                        }
+                        vWallsC := vWallsC - {wall};
+                    }
+                    if !found {
+                        vWalls := vWalls + {(p.0+1, (p.1-1, p.1))};
+                    }
+                }
+                if (0 <= (p.1-1 as int) && data[p.1-1][p.0] != data[p.1][p.0]) || p.1 == 0 {
+                    var hWallsC := hWalls;
+                    var found := false;
+                    while hWallsC != {} {
+                        var wall :| wall in hWallsC;
+                        if wall.0 == p.1 && wall.1.1 == p.0-1 && data[p.1][p.0-1] == data[p.1][p.0] {
+                            found := true;
+                            // print "found", wall, "\n";
+                            hWalls := hWalls - {wall}+ {(wall.0, (wall.1.0, p.0))};
+                            break;
+                        }
+                        hWallsC := hWallsC - {wall};
+                    }
+                    if !found {
+                        hWalls := hWalls + {(p.1, (p.0-1, p.0))};
+                    }
+                }
+                if (p.1+1 < dim.1 && data[p.1+1][p.0] != data[p.1][p.0]) || p.1 == dim.1-1 {
+                    var hWallsC := hWalls;
+                    var found := false;
+                    while hWallsC != {} {
+                        var wall :| wall in hWallsC;
+                        if wall.0 == p.1+1 && wall.1.1 == p.0-1 && data[p.1][p.0-1] == data[p.1][p.0] {
+                            found := true;
+                            hWalls := hWalls - {wall}+ {(wall.0, (wall.1.0, p.0))};
+                            break;
+                        }
+                        hWallsC := hWallsC - {wall};
+                    }
+                    if !found {
+                        hWalls := hWalls + {(p.1+1, (p.0-1, p.0))};
+                    }
+                }
+            }
+            // var p := indexToPair(group, dim);
+            // print "rootVal", data[p.1][p.0], "\n";
+            // print "Vertical ", vWalls, "\n";
+            // print "Horizont ", hWalls, "\n";
+            // print groupMembers, "\n";
+            x := x + (|vWalls| + |hWalls|) * |groupMembers|;
+        }
+
+
     }
 }
